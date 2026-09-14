@@ -65,11 +65,11 @@ interface StoreContextType {
   notifications: NotificationItem[];
 
   // Mutations
-  addCustomer: (cust: Omit<Customer, 'id' | 'code' | 'createdAt'>) => void;
+  addCustomer: (cust: Omit<Customer, 'id' | 'code' | 'createdAt'>) => Customer;
   updateCustomer: (id: string, cust: Partial<Customer>) => void;
   deleteCustomer: (id: string) => void;
 
-  addPet: (pet: Omit<Pet, 'id' | 'groomingHistoryCount' | 'stayHistoryCount' | 'medicalHistory'>) => void;
+  addPet: (pet: Omit<Pet, 'id' | 'groomingHistoryCount' | 'stayHistoryCount' | 'medicalHistory'>) => Pet;
   updatePet: (id: string, pet: Partial<Pet>) => void;
   deletePet: (id: string) => void;
 
@@ -185,7 +185,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Customer Mutations
-  const addCustomer = (data: Omit<Customer, 'id' | 'code' | 'createdAt'>) => {
+  const addCustomer = (data: Omit<Customer, 'id' | 'code' | 'createdAt'>): Customer => {
     const newCust: Customer = {
       ...data,
       id: `cust-${Date.now()}`,
@@ -193,6 +193,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: new Date().toISOString().split('T')[0]
     };
     setCustomers(prev => [newCust, ...prev]);
+    return newCust;
   };
 
   const updateCustomer = (id: string, data: Partial<Customer>) => {
@@ -204,7 +205,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Pet Mutations
-  const addPet = (data: Omit<Pet, 'id' | 'groomingHistoryCount' | 'stayHistoryCount' | 'medicalHistory'>) => {
+  const addPet = (data: Omit<Pet, 'id' | 'groomingHistoryCount' | 'stayHistoryCount' | 'medicalHistory'>): Pet => {
     const newPet: Pet = {
       ...data,
       id: `pet-${Date.now()}`,
@@ -213,6 +214,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       medicalHistory: []
     };
     setPets(prev => [newPet, ...prev]);
+    return newPet;
   };
 
   const updatePet = (id: string, data: Partial<Pet>) => {

@@ -17,7 +17,10 @@ import {
   RefreshCw,
   Clock3,
   CalendarDays,
-  Filter
+  Filter,
+  UserPlus,
+  X,
+  Sparkles as SparklesIcon
 } from 'lucide-react';
 
 export const AppointmentsPage: React.FC = () => {
@@ -31,6 +34,8 @@ export const AppointmentsPage: React.FC = () => {
     updateAppointmentStatus, 
     assignAppointmentStaff,
     deleteAppointment,
+    addCustomer,
+    addPet,
     globalSearch
   } = useStore();
 
@@ -41,6 +46,18 @@ export const AppointmentsPage: React.FC = () => {
   // 7-Step Booking Modal State
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+
+  // Step 1 Customer Search & Quick Add State
+  const [step1SearchTerm, setStep1SearchTerm] = useState('');
+  const [isQuickAddCustomerOpen, setIsQuickAddCustomerOpen] = useState(false);
+  const [quickCustName, setQuickCustName] = useState('');
+  const [quickCustPhone, setQuickCustPhone] = useState('');
+  const [quickCustEmail, setQuickCustEmail] = useState('');
+  const [quickCustTier, setQuickCustTier] = useState<'Đồng' | 'Bạc' | 'Vàng' | 'Kim Cương'>('Đồng');
+  const [quickPetName, setQuickPetName] = useState('');
+  const [quickPetSpecies, setQuickPetSpecies] = useState<'Chó' | 'Mèo'>('Chó');
+  const [quickPetBreed, setQuickPetBreed] = useState('');
+  const [quickPetWeight, setQuickPetWeight] = useState('3.5');
 
   // Form State
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
@@ -100,6 +117,56 @@ export const AppointmentsPage: React.FC = () => {
     resetForm();
   };
 
+  const handleQuickAddCustomer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickCustName.trim() || !quickCustPhone.trim()) {
+      alert('Vui lòng nhập đầy đủ Họ tên và Số điện thoại khách hàng!');
+      return;
+    }
+
+    // 1. Tạo khách hàng mới
+    const newCust = addCustomer({
+      name: quickCustName.trim(),
+      phone: quickCustPhone.trim(),
+      email: quickCustEmail.trim() || `${quickCustPhone.trim()}@petcare.vn`,
+      tier: quickCustTier,
+      points: 0,
+      notes: 'Khách hàng tạo trực tiếp từ quy trình đặt lịch',
+    });
+
+    // 2. Tạo thú cưng kèm theo (nếu có nhập)
+    let createdPetId = '';
+    if (quickPetName.trim()) {
+      const newPet = addPet({
+        name: quickPetName.trim(),
+        species: quickPetSpecies,
+        breed: quickPetBreed.trim() || (quickPetSpecies === 'Chó' ? 'Poodle' : 'Mèo Anh'),
+        weight: parseFloat(quickPetWeight) || 3.5,
+        ownerId: newCust.id,
+        birthYear: new Date().getFullYear(),
+        gender: 'Đực',
+        isSterilized: false,
+        notes: 'Tạo cùng lịch hẹn đầu tiên'
+      });
+      createdPetId = newPet.id;
+    }
+
+    // 3. Tự động chọn khách hàng và thú cưng vừa tạo
+    setSelectedCustomerId(newCust.id);
+    if (createdPetId) {
+      setSelectedPetId(createdPetId);
+    }
+
+    // 4. Đóng form tạo nhanh và reset trường
+    setIsQuickAddCustomerOpen(false);
+    setStep1SearchTerm('');
+    setQuickCustName('');
+    setQuickCustPhone('');
+    setQuickCustEmail('');
+    setQuickPetName('');
+    setQuickPetBreed('');
+  };
+
   const resetForm = () => {
     setCurrentStep(1);
     setSelectedCustomerId('');
@@ -107,6 +174,8 @@ export const AppointmentsPage: React.FC = () => {
     setSelectedServiceId('');
     setSelectedStaffId('');
     setBookingNotes('');
+    setStep1SearchTerm('');
+    setIsQuickAddCustomerOpen(false);
   };
 
   const getStatusBadge = (status: string) => {
@@ -322,45 +391,267 @@ export const AppointmentsPage: React.FC = () => {
         </div>
 
         <form onSubmit={handleBookingSubmit} className="space-y-6">
-          {/* STEP 1: Select Customer */}
+          {/* STEP 1: Select or Create Customer */}
           {currentStep === 1 && (
             <div className="space-y-3">
-              <label className="block text-xs font-bold text-slate-700">1. Chọn Khách Hàng *</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1">
-                {customers.map((c) => (
-                  <label 
-                    key={c.id}
-                    className={`p-3 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
-                      selectedCustomerId === c.id 
-                        ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20' 
-                        : 'border-slate-200 hover:border-emerald-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <input 
-                        type="radio" 
-                        name="customer" 
-                        value={c.id}
-                        checked={selectedCustomerId === c.id}
-                        onChange={() => {
-                          setSelectedCustomerId(c.id);
-                          // Auto select first pet
-                          const userPetList = pets.filter(p => p.ownerId === c.id);
-                          if (userPetList.length > 0) setSelectedPetId(userPetList[0].id);
-                        }}
-                        className="accent-emerald-500"
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-slate-100">
+                <label className="block text-xs font-bold text-slate-800">
+                  1. Chọn Khách Hàng (hoặc Tạo Mới nếu chưa có) *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsQuickAddCustomerOpen(!isQuickAddCustomerOpen)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 shadow-sm ${
+                    isQuickAddCustomerOpen
+                      ? 'bg-slate-200 text-slate-800 hover:bg-slate-300'
+                      : 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
+                  }`}
+                >
+                  {isQuickAddCustomerOpen ? (
+                    <>
+                      <X className="w-3.5 h-3.5" /> Đóng Form Tạo Mới
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-3.5 h-3.5" /> + Thêm Khách Hàng Mới
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Quick Add Customer Sub-Form */}
+              {isQuickAddCustomerOpen ? (
+                <div className="bg-emerald-50/60 border-2 border-emerald-300 p-4 rounded-2xl space-y-3 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center justify-between border-b border-emerald-200 pb-2">
+                    <p className="text-xs font-black text-emerald-900 uppercase flex items-center gap-1.5">
+                      <UserPlus className="w-4 h-4 text-emerald-600" /> Nhập Thông Tin Khách & Thú Cưng Mới
+                    </p>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-200/70 px-2 py-0.5 rounded-full">
+                      Tạo & Chọn Tự Động
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-800 mb-0.5">Tên Khách Hàng *</label>
+                      <input
+                        type="text"
+                        required
+                        value={quickCustName}
+                        onChange={(e) => setQuickCustName(e.target.value)}
+                        placeholder="VD: Nguyễn Mai Hương"
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-emerald-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-slate-900"
                       />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-800 mb-0.5">Số Điện Thoại *</label>
+                      <input
+                        type="text"
+                        required
+                        value={quickCustPhone}
+                        onChange={(e) => setQuickCustPhone(e.target.value)}
+                        placeholder="VD: 0988112233"
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-emerald-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-slate-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-800 mb-0.5">Email (Tùy chọn)</label>
+                      <input
+                        type="email"
+                        value={quickCustEmail}
+                        onChange={(e) => setQuickCustEmail(e.target.value)}
+                        placeholder="maihuong@gmail.com"
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-emerald-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-slate-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-800 mb-0.5">Hạng Thành Viên</label>
+                      <select
+                        value={quickCustTier}
+                        onChange={(e) => setQuickCustTier(e.target.value as any)}
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-emerald-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-slate-900"
+                      >
+                        <option value="Đồng">Hạng Đồng (Mặc định)</option>
+                        <option value="Bạc">Hạng Bạc</option>
+                        <option value="Vàng">Hạng Vàng</option>
+                        <option value="Kim Cương">Hạng Kim Cương</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Optional Quick Pet info */}
+                  <div className="pt-2 border-t border-emerald-200">
+                    <p className="text-[11px] font-bold text-emerald-800 mb-2 flex items-center gap-1">
+                      <Dog className="w-3.5 h-3.5" /> Thông tin Thú Cưng ban đầu (tự động tạo kèm):
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="block text-[10px] font-bold text-slate-700 mb-0.5">Tên Bé *</label>
+                        <input
+                          type="text"
+                          value={quickPetName}
+                          onChange={(e) => setQuickPetName(e.target.value)}
+                          placeholder="VD: Corgi Miu"
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-emerald-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-slate-900"
+                        />
+                      </div>
                       <div>
-                        <p className="font-bold text-slate-900 text-xs">{c.name}</p>
-                        <p className="text-[10px] text-slate-400">{c.phone}</p>
+                        <label className="block text-[10px] font-bold text-slate-700 mb-0.5">Loài</label>
+                        <select
+                          value={quickPetSpecies}
+                          onChange={(e) => setQuickPetSpecies(e.target.value as any)}
+                          className="w-full px-2 py-1.5 text-xs bg-white border border-emerald-300 rounded-xl outline-none font-bold"
+                        >
+                          <option value="Chó">🐶 Chó</option>
+                          <option value="Mèo">🐱 Mèo</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-700 mb-0.5">Giống</label>
+                        <input
+                          type="text"
+                          value={quickPetBreed}
+                          onChange={(e) => setQuickPetBreed(e.target.value)}
+                          placeholder="Poodle / Ta"
+                          className="w-full px-2 py-1.5 text-xs bg-white border border-emerald-300 rounded-xl outline-none font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-700 mb-0.5">Cân nặng (kg)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={quickPetWeight}
+                          onChange={(e) => setQuickPetWeight(e.target.value)}
+                          className="w-full px-2 py-1.5 text-xs bg-white border border-emerald-300 rounded-xl outline-none font-bold"
+                        />
                       </div>
                     </div>
-                    <span className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                      {c.tier}
-                    </span>
-                  </label>
-                ))}
-              </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-emerald-200">
+                    <button
+                      type="button"
+                      onClick={() => setIsQuickAddCustomerOpen(false)}
+                      className="px-3.5 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-100"
+                    >
+                      Hủy bỏ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleQuickAddCustomer}
+                      className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md flex items-center gap-1.5"
+                    >
+                      <SparklesIcon className="w-3.5 h-3.5" /> Lưu Khách & Chọn Luôn
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Search Customer Input */}
+                  <div className="relative">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={step1SearchTerm}
+                      onChange={(e) => setStep1SearchTerm(e.target.value)}
+                      placeholder="Tìm khách hàng theo Tên, Số điện thoại hoặc Mã KH..."
+                      className="w-full pl-9 pr-8 py-2 text-xs border-2 border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-bold bg-slate-50 focus:bg-white transition-all text-slate-900"
+                    />
+                    {step1SearchTerm && (
+                      <button
+                        type="button"
+                        onClick={() => setStep1SearchTerm('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Customer Grid Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-60 overflow-y-auto pr-1">
+                    {customers
+                      .filter((c) => {
+                        if (!step1SearchTerm.trim()) return true;
+                        const term = step1SearchTerm.toLowerCase();
+                        return (
+                          c.name.toLowerCase().includes(term) ||
+                          c.phone.includes(term) ||
+                          (c.code && c.code.toLowerCase().includes(term))
+                        );
+                      })
+                      .map((c) => (
+                        <label 
+                          key={c.id}
+                          className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                            selectedCustomerId === c.id 
+                              ? 'border-emerald-500 bg-emerald-50/80 ring-2 ring-emerald-500/20' 
+                              : 'border-slate-200 hover:border-emerald-300 bg-white'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <input 
+                              type="radio" 
+                              name="customer" 
+                              value={c.id}
+                              checked={selectedCustomerId === c.id}
+                              onChange={() => {
+                                setSelectedCustomerId(c.id);
+                                // Auto select first pet
+                                const userPetList = pets.filter(p => p.ownerId === c.id);
+                                if (userPetList.length > 0) setSelectedPetId(userPetList[0].id);
+                              }}
+                              className="accent-emerald-500 w-4 h-4"
+                            />
+                            <div>
+                              <p className="font-black text-slate-900 text-xs">{c.name}</p>
+                              <p className="text-[10px] text-slate-600 font-bold">{c.phone} • {c.code || 'KH'}</p>
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
+                            c.tier === 'Kim Cương' ? 'bg-purple-100 text-purple-900 border-purple-300' :
+                            c.tier === 'Vàng' ? 'bg-amber-100 text-amber-900 border-amber-300' :
+                            c.tier === 'Bạc' ? 'bg-slate-200 text-slate-900 border-slate-300' :
+                            'bg-orange-100 text-orange-900 border-orange-300'
+                          }`}>
+                            {c.tier}
+                          </span>
+                        </label>
+                      ))}
+
+                    {/* Empty search result */}
+                    {customers.filter((c) => {
+                      if (!step1SearchTerm.trim()) return true;
+                      const term = step1SearchTerm.toLowerCase();
+                      return (
+                        c.name.toLowerCase().includes(term) ||
+                        c.phone.includes(term) ||
+                        (c.code && c.code.toLowerCase().includes(term))
+                      );
+                    }).length === 0 && (
+                      <div className="col-span-1 sm:col-span-2 p-6 bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl text-center space-y-2">
+                        <p className="text-xs font-bold text-slate-600">
+                          Không tìm thấy khách hàng nào khớp với "{step1SearchTerm}"
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickCustName(step1SearchTerm);
+                            setIsQuickAddCustomerOpen(true);
+                          }}
+                          className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs rounded-xl shadow inline-flex items-center gap-1.5"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" /> + Tạo mới khách hàng "{step1SearchTerm}"
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
