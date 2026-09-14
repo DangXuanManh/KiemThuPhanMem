@@ -1,0 +1,9 @@
+{
+  "name": "petcare-store-system",
+  "version": "1.0.0",
+  "description": "Fullstack Website Quản lý Cửa hàng Dịch vụ Thú cưng (PetCare Store)",
+  "scripts": {
+    "start": "run.bat",
+    "test": "npm test --prefix backend"
+  }
+}

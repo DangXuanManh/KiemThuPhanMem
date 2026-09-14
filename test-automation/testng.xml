@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="PetCare PRO Automation Test Suite" verbose="2" parallel="classes" thread-count="1">
+    
+    <listeners>
+        <listener class-name="com.petcare.automation.utils.ExtentReportListener"/>
+    </listeners>
+
+    <test name="End-to-End Regression Test Suite">
+        <classes>
+            <class name="com.petcare.automation.tests.AuthAndRbacTest"/>
+            <class name="com.petcare.automation.tests.AppointmentsTest"/>
+            <class name="com.petcare.automation.tests.CustomersAndPetsTest"/>
+            <class name="com.petcare.automation.tests.PosOrdersTest"/>
+            <class name="com.petcare.automation.tests.ProductsInventoryTest"/>
+            <class name="com.petcare.automation.tests.ServicesAndStaffTest"/>
+            <class name="com.petcare.automation.tests.PromotionsAndCrmTest"/>
+        </classes>
+    </test>
+    
+</suite>
