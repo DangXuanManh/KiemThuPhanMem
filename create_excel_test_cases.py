@@ -621,13 +621,14 @@ sys_data = [
 
 
 # ==========================================
-# GENERATE EXCEL WORKBOOKS
+# GENERATE UNIFIED 3-SHEET EXCEL WORKBOOK
 # ==========================================
 
-# 1. Unit Test Cases File
-wb_unit = openpyxl.Workbook()
-ws_unit = wb_unit.active
-ws_unit.title = "Unit Test Cases"
+wb_all = openpyxl.Workbook()
+
+# Sheet 1: Unit Test
+ws_unit = wb_all.active
+ws_unit.title = "Unit Test"
 apply_sheet_formatting(
     ws_unit,
     "BẢNG KỊCH BẢN KIỂM THỬ ĐƠN VỊ (UNIT TEST CASES) - PETCARE PRO",
@@ -636,14 +637,9 @@ apply_sheet_formatting(
     unit_columns,
     unit_data
 )
-unit_file_path = os.path.join(output_dir, "Unit_Test_Cases.xlsx")
-wb_unit.save(unit_file_path)
-print(f"-> Da tao thanh cong: {unit_file_path}")
 
-# 2. Integration Test Cases File
-wb_int = openpyxl.Workbook()
-ws_int = wb_int.active
-ws_int.title = "Integration Test Cases"
+# Sheet 2: Integration Test
+ws_int = wb_all.create_sheet(title="Integration Test")
 apply_sheet_formatting(
     ws_int,
     "BẢNG KỊCH BẢN KIỂM THỬ TÍCH HỢP (INTEGRATION TEST CASES) - PETCARE PRO",
@@ -652,14 +648,9 @@ apply_sheet_formatting(
     int_columns,
     int_data
 )
-int_file_path = os.path.join(output_dir, "Integration_Test_Cases.xlsx")
-wb_int.save(int_file_path)
-print(f"-> Da tao thanh cong: {int_file_path}")
 
-# 3. System Test Cases File
-wb_sys = openpyxl.Workbook()
-ws_sys = wb_sys.active
-ws_sys.title = "System Test Cases"
+# Sheet 3: System Test
+ws_sys = wb_all.create_sheet(title="System Test")
 apply_sheet_formatting(
     ws_sys,
     "BẢNG KỊCH BẢN KIỂM THỬ HỆ THỐNG (SYSTEM / E2E TEST CASES) - PETCARE PRO",
@@ -668,8 +659,29 @@ apply_sheet_formatting(
     sys_columns,
     sys_data
 )
-sys_file_path = os.path.join(output_dir, "System_Test_Cases.xlsx")
-wb_sys.save(sys_file_path)
-print(f"-> Da tao thanh cong: {sys_file_path}")
 
-print("\nHOAN TAT TAO 3 FILE EXCEL TEST CASE CHUAN XAC!")
+unified_file_path = os.path.join(output_dir, "Tong_Hop_Test_Cases_PetCare.xlsx")
+wb_all.save(unified_file_path)
+print(f"-> Da tao thanh cong file Tong Hop 3 Sheet: {unified_file_path}")
+
+# Save Individual Files as well
+wb_u = openpyxl.Workbook()
+ws_u = wb_u.active
+ws_u.title = "Unit Test"
+apply_sheet_formatting(ws_u, "BẢNG KỊCH BẢN KIỂM THỬ ĐƠN VỊ (UNIT TEST CASES) - PETCARE PRO", "Kiểm thử chi tiết các hàm xử lý logic, mô hình dữ liệu (Models), tính toán đơn hàng và State Mutations trong StoreContext", fill_header_unit, unit_columns, unit_data)
+wb_u.save(os.path.join(output_dir, "Unit_Test_Cases.xlsx"))
+
+wb_i = openpyxl.Workbook()
+ws_i = wb_i.active
+ws_i.title = "Integration Test"
+apply_sheet_formatting(ws_i, "BẢNG KỊCH BẢN KIỂM THỬ TÍCH HỢP (INTEGRATION TEST CASES) - PETCARE PRO", "Kiểm thử sự tương tác giữa các module: Auth & RBAC, Lịch hẹn ⟷ Khách hàng ⟷ Thợ Spa, POS ⟷ Tồn kho, REST API", fill_header_int, int_columns, int_data)
+wb_i.save(os.path.join(output_dir, "Integration_Test_Cases.xlsx"))
+
+wb_s = openpyxl.Workbook()
+ws_s = wb_s.active
+ws_s.title = "System Test"
+apply_sheet_formatting(ws_s, "BẢNG KỊCH BẢN KIỂM THỬ HỆ THỐNG (SYSTEM / E2E TEST CASES) - PETCARE PRO", "Kiểm thử toàn diện các luồng nghiệp vụ người dùng End-to-End, Bán hàng POS, Đặt lịch 7 bước, Bảo mật & Responsive UI", fill_header_sys, sys_columns, sys_data)
+wb_s.save(os.path.join(output_dir, "System_Test_Cases.xlsx"))
+
+print("-> Da tao dong thoi cac file rieng le de tien tra cuu!")
+print("\nHOAN TAT TAO TOAN BO FILE EXCEL TEST CASE CHUAN XAC!")
