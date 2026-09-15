@@ -108,11 +108,16 @@ try {
 }
 
 if (-not $frontendRunning) {
+    if (-not (Test-Path "$FrontendDir\node_modules")) {
+        Write-Host " -> Chua tim thay node_modules. Dang tu dong cai dat thu vien (npm install)..." -ForegroundColor Yellow
+        Start-Process -FilePath "cmd.exe" -ArgumentList "/c cd /d `"$FrontendDir`" && npm install" -Wait
+    }
+
     Write-Host " -> Dang khoi dong Frontend server o background..." -ForegroundColor Yellow
     Start-Process -FilePath "cmd.exe" -ArgumentList "/c cd /d `"$FrontendDir`" && npm run dev" -WindowStyle Minimized
     
     # Cho web server san sang
-    $retries = 15
+    $retries = 20
     while ($retries -gt 0) {
         Start-Sleep -Seconds 1
         try {

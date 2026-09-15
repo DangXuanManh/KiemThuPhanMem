@@ -1,5 +1,6 @@
-const { spawn, exec } = require('child_process');
+const { spawn, spawnSync, exec } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
 const rootDir = __dirname;
 const backendDir = path.join(rootDir, 'backend');
@@ -8,6 +9,18 @@ const frontendDir = path.join(rootDir, 'frontend');
 console.log('========================================================');
 console.log('🚀 DANG KHOI CHAY PETCARE STORE SYSTEM');
 console.log('========================================================');
+
+// Auto check and install dependencies for Backend if missing
+if (!fs.existsSync(path.join(backendDir, 'node_modules'))) {
+  console.log('\n[!] Chua tim thay backend/node_modules. Dang tu dong chay npm install cho Backend...');
+  spawnSync('npm', ['install'], { cwd: backendDir, shell: true, stdio: 'inherit' });
+}
+
+// Auto check and install dependencies for Frontend if missing
+if (!fs.existsSync(path.join(frontendDir, 'node_modules'))) {
+  console.log('\n[!] Chua tim thay frontend/node_modules. Dang tu dong chay npm install cho Frontend...');
+  spawnSync('npm', ['install'], { cwd: frontendDir, shell: true, stdio: 'inherit' });
+}
 
 // Start Backend
 console.log('\n[1/3] Dang khoi chay Backend Server (Port 5000)...');
